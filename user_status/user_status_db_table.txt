@@ -1,0 +1,94 @@
+CREATE TABLE IF NOT EXISTS public."user_status"(
+	user_status_id serial PRIMARY KEY,
+	domain_rhonda_id text UNIQUE NOT NULL,
+	status text NOT NULL DEFAULT 'Active' check(status in ('Active', 'Terminated')),
+	employee_environment text NOT NULL DEFAULT 'Other' check(employee_environment in ('Internal', 'External', 'Other')),
+	department text NULL,
+	work_type text NOT NULL DEFAULT 'Permanent' check(status in ('Permanent', 'Temporary', 'Contract')),
+	manager_id text NULL,
+	work_location text NULL check(work_location in ('Canada', 'USA', 'EU')),
+	gender text NULL check(gender in ('Male', 'Female', 'Intersex')),
+	birth_date date NULL,
+	start_date date NULL,
+	end_date date NULL,
+	created_at timestamp not null default (now() at time zone 'utc'),
+	updated_at timestamp not null default (now() at time zone 'utc'),
+	CONSTRAINT fk_user_domain_rhonda_id
+		FOREIGN KEY(domain_rhonda_id)
+			REFERENCES public."user"(domain_rhonda_id)
+			ON DELETE cascade
+);
+
+
+comment on table user_status is 'user_status table contains information about working status for every employee.
+Status can be Active or Terminated. After status is inserted or updated status in user table will be updated as well.
+This table contains triggers and functions as well.';
+comment on column user_status.status is 'Active is set as default and value can only be Active or Terminated. Check has been activated!';
+comment on column user_status.employee_environment is 'Other is set as default and value can only be Internal, External or Other. Check has been activated!';
+comment on column user_status.work_type is 'Permanent is set as default and value can only be Permanent, Temporary or Contract. Check has been activated!';
+comment on column user_status.work_location is 'NULL is set sa default and value can be Canada, USA, EU or NULL. Check has been activated!';
+comment on column user_status.gender is 'NULL is set sa default and value can be Male, Female, Intersex or NULL. Check has been activated!';
+
+
+ALTER TABLE public."user"
+ADD COLUMN status text NOT NULL DEFAULT 'Active';
+
+comment on column public.user.status is 'After new user has been imported his status will be Active automatically. 
+This will updated after new row has been inserted or updated in user_status table.';
+
+
+create or replace function user_tbl_status_update()
+returns trigger 
+language plpgsql
+as 
+$$
+begin 
+	update "user" 
+	set status = new.status
+	where domain_rhonda_id = new.domain_rhonda_id;
+	
+	return new;
+	
+end;
+$$
+
+
+
+create trigger status_insert
+after insert
+on "user_status"
+for each row 
+execute procedure user_tbl_status_update();
+
+create trigger status_update
+after update
+on "user_status"
+for each row 
+execute procedure user_tbl_status_update();
+
+
+
+
+create or replace function updated_at()
+returns trigger 
+language plpgsql
+as 
+$$
+begin 
+	new.updated_at = now();
+	
+	return new;
+end;
+$$
+
+create trigger update_at_update
+before update
+on "user_status"
+for each row 
+execute procedure updated_at();
+
+
+-- Add new column to user_info table
+create extension citext;
+ALTER TABLE user_info 
+ADD COLUMN email citext NULL;

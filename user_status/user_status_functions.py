@@ -44,16 +44,16 @@ RETURNING domain_rhonda_id;"""
 
 # UPDATE data
 UPDATE_USER_STATUS = """UPDATE user_status
-SET status = %s,
-employee_environment = %s,
-department = %s,
-work_type = %s,
-manager_id = %s,
-work_location = %s,
-gender = %s,
-birth_date = %s,
-start_date = %s,
-end_date = %s
+SET status = COALESCE(%s,status),,
+employee_environment = COALESCE(%s,employee_environment),
+department = COALESCE(%s,department),
+work_type = COALESCE(%s,work_type),
+manager_id = COALESCE(%s,manager_id),
+work_location = COALESCE(%s,work_location),
+gender = COALESCE(%s,gender),
+birth_date = COALESCE(%s,birth_date),
+start_date = COALESCE(%s,start_date),
+end_date = COALESCE(%s,end_date),
 WHERE domain_rhonda_id = %s
 RETURNING domain_rhonda_id;
 """

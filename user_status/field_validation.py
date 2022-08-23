@@ -2,8 +2,14 @@ from cerberus import Validator
 from datetime import datetime
 
 
-#KX - cerberus library for field validation --> Validation rules can be found: https://cerberus-sanhe.readthedocs.io/usage.html#validation-rules
+# cerberus library for field validation --> Validation rules can be found: https://cerberus-sanhe.readthedocs.io/usage.html#validation-rules
 def put_field_validation(req_body):
+    """This function will return validation result and errors if it has.
+    Args: json 
+
+    Returns:
+        Boolean, String: validation result and validation errors.
+    """
     field_vali = Validator()
     to_date = lambda s: datetime.strptime(s, '%Y-%m-%d')
     schema = {
@@ -19,18 +25,21 @@ def put_field_validation(req_body):
         'end_date': {'required': False, 'type': 'datetime','coerce': to_date,'nullable': True},
     }
 
-    #KX - if field validation pass, then it will return True, otherwise will return False 
-    vali_result = field_vali.validate(req_body, schema)
-
-    #KX - it will return the field validation error message if it dont pass
-    vali_error = field_vali.errors
-
+    vali_result = field_vali.validate(req_body, schema) # If field validation pass, then it will return True, otherwise will return False 
+    vali_error = field_vali.errors  # It will return the field validation error message if it dont pass
+    
     return vali_result, vali_error
 
 
 
-#KX - cerberus library for field validation --> Validation rules can be found: https://cerberus-sanhe.readthedocs.io/usage.html#validation-rules
+# cerberus library for field validation --> Validation rules can be found: https://cerberus-sanhe.readthedocs.io/usage.html#validation-rules
 def post_field_validation(req_body):
+    """This function will return validation result and errors if it has.
+    Args: json 
+
+    Returns:
+        Boolean, String: validation result and validation errors.
+    """
     field_vali = Validator()
     to_date = lambda s: datetime.strptime(s, '%Y-%m-%d')
     schema = {
@@ -47,11 +56,8 @@ def post_field_validation(req_body):
         'end_date': {'required': False, 'type': 'datetime','coerce': to_date,'nullable': True},
     }
     
-    #KX - if field validation pass, then it will return True, otherwise will return False 
-    vali_result = field_vali.validate(req_body, schema)
-
-    #KX - it will return the field validation error message if it dont pass
-    vali_error = field_vali.errors
+    vali_result = field_vali.validate(req_body, schema) # If field validation pass, then it will return True, otherwise will return False
+    vali_error = field_vali.errors  # It will return the field validation error message if it dont pass
 
     return vali_result, vali_error
 

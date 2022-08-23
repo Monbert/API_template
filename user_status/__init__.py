@@ -142,7 +142,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         mimetype="application/json",
                     )
 
-                #When field validation passed, then move forward to call update function
+                # When field validation passed, then move forward to call update function
                 else:
                     status = req_body.get("status")
                     employee_environment = req_body.get("employee_environment")
@@ -169,7 +169,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         domain_rhonda_id,
                     )
 
-                    #When this domain_rhonda_id doesn't exist, then update function will return None
+                    # When this domain_rhonda_id doesn't exist, then update function will return None
                     if not put_data:
                         return func.HttpResponse(
                             body=json.dumps({"message": f"{domain_rhonda_id} does not exist!"}),
@@ -254,8 +254,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # POST data
         try:
             req_body = req.get_json()
-            #Need to handle duplication 
-            #Return appropriate message if request failed
+            # Need to handle duplication 
+            # Return appropriate message if request failed
 
             ''' -----
             Need a validation right here
@@ -274,7 +274,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     mimetype="application/json",
                 )
 
-            #When field validation passed, then move forward to call post function
+            # When field validation passed, then move forward to call post function
             else:
                 domain_rhonda_id = req_body.get("domain_rhonda_id", None) # .get('', None)
                 status = req_body.get("status")
@@ -302,7 +302,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     end_date,
                 )
 
-                #When this domain_rhonda_id exists, then post function will return None
+                # When this domain_rhonda_id exists, then post function will return None
                 if not post_data:
                     return func.HttpResponse(
                         body=json.dumps({"message": f"{domain_rhonda_id} already exist!"}),
@@ -319,7 +319,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     )
 
         except Exception as error:
-            #Error code 500
+            # Error code 500
             logging.error(f"Error:{error}")
             return func.HttpResponse(
                 body=json.dumps({"message": f"{error}"}),

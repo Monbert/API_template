@@ -43,6 +43,8 @@ VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (domain_rhonda_i
 RETURNING domain_rhonda_id;"""
 
 # UPDATE data
+#KX - Need COALESCE() function here for only updating the distinc value of column that already have value existed
+#KX - Example: column = COALESCE(%s,column) 
 UPDATE_USER_STATUS = """UPDATE user_status
 SET status = COALESCE(%s,status),,
 employee_environment = COALESCE(%s,employee_environment),

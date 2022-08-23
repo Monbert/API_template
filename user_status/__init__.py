@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 import azure.functions as func
 from . import user_status_functions
-from cerberus import Validator
+from . import field_validation
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -47,7 +47,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     logging.error(f"Error: {error}")
                     return func.HttpResponse(
                         body=json.dumps({"message": f"{error}"}),
-                        status_code=500, #HY - Should be 500 Internal Server Error
+                        status_code=500, #Should be 500 Internal Server Error
                         charset="utf-8",
                         mimetype="application/json",
                     )
@@ -126,33 +126,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             if domain_rhonda_id:
 
                 ''' -----
-                HY
                 Need a validation right here
                 1. Check if field type is correct
                 2. Check if Null/None/Empty field ---> Return 4xx request
                 3. Check field length (Make sure does not exceed the max length allowed in the db)
                 4. so on ....
                 ------ '''
-
-
-                # cerberus library for field validation --> Validation rules can be found: https://cerberus-sanhe.readthedocs.io/usage.html#validation-rules
-                field_vali = Validator()
-                to_date = lambda s: datetime.strptime(s, '%Y-%m-%d')
-                schema = {
-                    'status': {'required': False, 'type': 'string','empty': False,'allowed': ['Active', 'Terminated']},
-                    'employee_environment': {'required': False, 'type': 'string','empty': False,'allowed': ['Internal', 'External','Other']},
-                    'department': {'required': False, 'type': 'string','nullable': True},
-                    'work_type': {'required': False, 'type': 'string','empty': False,'allowed': ['Permanent', 'Temporary', 'Contract']},
-                    'manager_id': {'required': False, 'type': 'string','nullable': True},
-                    'work_location': {'required': False, 'type': 'string','nullable': True,'allowed': ['Canada','USA','EU','NULL']},
-                    'gender': {'required': False, 'type': 'string','nullable': True,'allowed': ['Male', 'Female', 'Intersex','NULL']},
-                    'birth_date': {'required': False, 'type': 'datetime','coerce': to_date,'nullable': True},
-                    'start_date': {'required': False, 'type': 'datetime','coerce': to_date,'nullable': True},
-                    'end_date': {'required': False, 'type': 'datetime','coerce': to_date,'nullable': True},
-                }
-
-                vali_result = field_vali.validate(req_body, schema)
-                vali_error = field_vali.errors
+                vali_result, vali_error = field_validation.put_field_validation(req_body)
 
                 if not vali_result :
                     return func.HttpResponse(
@@ -162,6 +142,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         mimetype="application/json",
                     )
 
+                #When field validation passed, then move forward to call update function
                 else:
                     status = req_body.get("status")
                     employee_environment = req_body.get("employee_environment")
@@ -188,6 +169,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         domain_rhonda_id,
                     )
 
+                    #When this domain_rhonda_id doesn't exist, then update function will return None
                     if not put_data:
                         return func.HttpResponse(
                             body=json.dumps({"message": f"{domain_rhonda_id} does not exist!"}),
@@ -205,19 +187,19 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             else:
                 # Return 404 if UUID is not passed in the URL
                 return func.HttpResponse(
-                    body=json.dumps({"message": f"Update failed! Check body parameters and if {domain_rhonda_id} exists!"}), #HY - Please check the appropriate message
-                    status_code=500,
+                    body=json.dumps({"message": f"Update failed! domain_rhonda_id is required in URL for PUT request!"}), #HY - Please check the appropriate message
+                    status_code=404,
                     charset="utf-8",
                     mimetype="application/json",
                 )
 
         except Exception as error:
-            #HY - Highly recommend to use exception to throw error related to Internal Server Error issue.
+            # Highly recommend to use exception to throw error related to Internal Server Error issue.
             # 500 error code should be return in the exception block
             # If error related to missing domain_rhonda_id should be handled in the if/else statement
             logging.error(f"Error:{error}")
             return func.HttpResponse(
-                body=json.dumps({"message": f"Update failed! Check body parameters and if {domain_rhonda_id} exists!"}),
+                body=json.dumps({"message": f"{error}"}),
                 status_code=500,
                 charset="utf-8",
                 mimetype="application/json",
@@ -230,23 +212,39 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
             if domain_rhonda_id:
                 delete_data = user_status_functions.delete_user_status(domain_rhonda_id)
-                return func.HttpResponse(delete_data, status_code=204)
+
+                #When this domain_rhonda_id doesn't exist, then delete function will return None
+                if not delete_data:
+                    return func.HttpResponse(
+                        body=json.dumps({"message": f"{domain_rhonda_id} does not exist!"}),
+                        status_code=404,
+                        charset="utf-8",
+                        mimetype="application/json",
+                    )    
+                else:
+                    return func.HttpResponse(
+                        body=json.dumps({"message": f"{status} has been deleted successfully!"}),
+                        status_code=204, 
+                        charset='utf-8', 
+                        mimetype='application/json'
+                    )
+
             else:
                 # If no UUID is passed
                 return func.HttpResponse(
-                    body=json.dumps({"message": f"Update failed! Check body parameters and if {domain_rhonda_id} exists!"}), #HY - Please check the appropriate message
+                    body=json.dumps({"message": f"domain_rhonda_id in URL is required in DELETE request!"}), #HY - Please check the appropriate message
                     status_code=404,
                     charset="utf-8",
                     mimetype="application/json",
                 )
         except Exception as error:
-            #HY - Highly recommend to use exception to throw error related to Internal Server Error issue.
+            # Highly recommend to use exception to throw error related to Internal Server Error issue.
             # 500 error code should be return in the exception block
             # If error related to missing domain_rhonda_id should be handled in the if/else statement
 
             logging.error(f"Error:{error}")
             return func.HttpResponse(
-                body=json.dumps({"message": f"Delete failed! Check if {domain_rhonda_id} exists!"}),
+                body=json.dumps({"message": f"{error}"}),
                 status_code=500,
                 charset="utf-8",
                 mimetype="application/json",
@@ -256,38 +254,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # POST data
         try:
             req_body = req.get_json()
-            #HY - Need to handle duplication 
-            #HY - Return appropriate message if request failed
+            #Need to handle duplication 
+            #Return appropriate message if request failed
 
             ''' -----
-            HY
             Need a validation right here
             1. Check if all required fields are passed, else return 400 with error message containing what fields are missing
             2. Check field type
             3. Check field length (Make sure does not exceed the max length allowed in the db)
             4. So on ....
             ------ '''
-
-
-            # cerberus library for field validation --> Validation rules can be found: https://cerberus-sanhe.readthedocs.io/usage.html#validation-rules
-            field_vali = Validator()
-            to_date = lambda s: datetime.strptime(s, '%Y-%m-%d')
-            schema = {
-                'domain_rhonda_id': {'required': True, 'type': 'string','empty': False},
-                'status': {'required': True, 'type': 'string','empty': False,'allowed': ['Active', 'Terminated']},
-                'employee_environment': {'required': True, 'type': 'string','empty': False,'allowed': ['Internal', 'External','Other']},
-                'department': {'required': False, 'type': 'string','nullable': True},
-                'work_type': {'required': True, 'type': 'string','empty': False,'allowed': ['Permanent', 'Temporary', 'Contract']},
-                'manager_id': {'required': False, 'type': 'string','nullable': True},
-                'work_location': {'required': False, 'type': 'string','nullable': True,'allowed': ['Canada','USA','EU','NULL']},
-                'gender': {'required': False, 'type': 'string','nullable': True,'allowed': ['Male', 'Female', 'Intersex','NULL']},
-                'birth_date': {'required': False, 'type': 'datetime','coerce': to_date,'nullable': True},
-                'start_date': {'required': False, 'type': 'datetime','coerce': to_date,'nullable': True},
-                'end_date': {'required': False, 'type': 'datetime','coerce': to_date,'nullable': True},
-            }
-            
-            vali_result = field_vali.validate(req_body, schema)
-            vali_error = field_vali.errors
+            vali_result, vali_error = field_validation.post_field_validation(req_body)
 
             if not vali_result :
                 return func.HttpResponse(
@@ -296,7 +273,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     charset="utf-8",
                     mimetype="application/json",
                 )
-            
+
+            #When field validation passed, then move forward to call post function
             else:
                 domain_rhonda_id = req_body.get("domain_rhonda_id", None) # .get('', None)
                 status = req_body.get("status")
@@ -323,6 +301,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     start_date,
                     end_date,
                 )
+
+                #When this domain_rhonda_id exists, then post function will return None
                 if not post_data:
                     return func.HttpResponse(
                         body=json.dumps({"message": f"{domain_rhonda_id} already exist!"}),
@@ -331,15 +311,18 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         mimetype="application/json",
                     )
                 else:
-                    return func.HttpResponse(post_data, status_code=201)
+                    return func.HttpResponse(
+                        body=json.dumps({"message": f"{post_data} has been inserted successfully!"}),
+                        status_code=201, 
+                        charset='utf-8', 
+                        mimetype='application/json'
+                    )
 
         except Exception as error:
-            #HY - Error code 500
+            #Error code 500
             logging.error(f"Error:{error}")
             return func.HttpResponse(
-                body=json.dumps(
-                    {"message": f"POST failed! Check body parameters and if {domain_rhonda_id} already exist!"}
-                ),
+                body=json.dumps({"message": f"{error}"}),
                 status_code=500,
                 charset="utf-8",
                 mimetype="application/json",
